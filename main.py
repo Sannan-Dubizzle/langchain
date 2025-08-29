@@ -1,5 +1,6 @@
 import getpass
 import os
+from pydantic import Field, BaseModel
 
 if not os.environ.get("GOOGLE_API_KEY"):
     os.environ["GOOGLE_API_KEY"] = getpass.getpass("Enter API key for Google Gemini: ")
@@ -113,7 +114,8 @@ from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate, Sy
 system_prompt = SystemMessagePromptTemplate.from_template(
     "You are a world class content writer that writes catchy titles for articles.")
 user_prompt = HumanMessagePromptTemplate.from_template(
-    '''You are given an atricle to analyze and create a catchy title for it.
+    '''You are given an atricle to analyze and create a catchy title, a seo friendly description
+     and a concise summary for it.
     Following is the article to analyze:
     ___
     {article}
@@ -126,6 +128,14 @@ user_prompt.format(article=article)
 
 first_prompt = ChatPromptTemplate.from_messages([system_prompt, user_prompt])
 
+
+class StrucutredResponse(BaseModel):
+    title: str = Field(description=("The title of the article"))
+    description: str = Field(description=("A short seo friendly description of the article"))
+    summary: str = Field(description=("A concise summary of the article"))
+
+
+structured_llm = llm.with_structured_output(StrucutredResponse)
 chain_one = (
     {
         "article": lambda x: x['article']
@@ -135,5 +145,17 @@ chain_one = (
     | {"article_title": lambda x: x.content}
 )
 
+chain_two = (
+        {
+            "article": lambda x: x['article']
+        }
+        | first_prompt
+        | structured_llm
+)
+
+
 title = chain_one.invoke({"article": article})
 print(title)
+
+response = chain_two.invoke({"article": article})
+print(response.title)
