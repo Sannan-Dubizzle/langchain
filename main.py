@@ -4,6 +4,15 @@ from pydantic import Field, BaseModel
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_postgres import PGVector
 from langchain_core.documents import Document
+from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_core.messages import BaseMessage, AIMessage
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables import (
+    RunnableLambda,
+    ConfigurableFieldSpec,
+    RunnablePassthrough,
+)
+from langchain_core.runnables.history import RunnableWithMessageHistory
 
 if not os.environ.get("GOOGLE_API_KEY"):
     os.environ["GOOGLE_API_KEY"] = getpass.getpass("Enter API key for Google Gemini: ")
@@ -228,3 +237,70 @@ results = vector_store.similarity_search_with_score(
 )
 for doc in results:
     print(doc)
+
+
+class InMemoryHistory(BaseChatMessageHistory, BaseModel):
+    """In memory implementation of chat message history."""
+
+    messages: list[BaseMessage] = Field(default_factory=list)
+
+    def add_messages(self, messages: list[BaseMessage]) -> None:
+        """Add a list of messages to the store"""
+        self.messages.extend(messages)
+
+    def clear(self) -> None:
+        self.messages = []
+
+
+# Here we use a global variable to store the chat message history.
+# This will make it easier to inspect it to see the underlying results.
+store = {}
+
+
+def get_by_session_id(session_id: str) -> BaseChatMessageHistory:
+    if session_id not in store:
+        store[session_id] = InMemoryHistory()
+    return store[session_id]
+
+
+# history = get_by_session_id("1")
+# history.add_message(AIMessage(content="hello"))
+# print(store)
+
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You're an assistant who's good at {ability}. You always answer in a concise manner under 200 characters."),
+    MessagesPlaceholder(variable_name="history"),
+    ("human", "{question}"),
+])
+
+chain = prompt | ChatGoogleGenerativeAI(model="gemini-2.5-flash",
+                                        temperature=0,
+                                        max_tokens=None,
+                                        timeout=None,
+                                        max_retries=2)
+
+chain_with_history = RunnableWithMessageHistory(
+    chain,
+    # Uses the get_by_session_id function defined in the example
+    # above.
+    get_by_session_id,
+    input_messages_key="question",
+    history_messages_key="history",
+)
+
+print(chain_with_history.invoke(  # noqa: T201
+    {"ability": "math", "question": "What does cosine mean?"},
+    config={"configurable": {"session_id": "foo"}}
+))
+
+# Uses the store defined in the example above.
+print(store)  # noqa: T201
+
+print(chain_with_history.invoke(  # noqa: T201
+    {"ability": "math", "question": "What's its inverse"},
+    config={"configurable": {"session_id": "foo"}}
+))
+
+print(store)  # noqa: T201
