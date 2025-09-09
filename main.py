@@ -1,9 +1,12 @@
+# This is just a playground, actual application runs from app.py
+
+
+
 import getpass
 import os
 from pydantic import Field, BaseModel
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_postgres import PGVector
-from langchain_core.documents import Document
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.messages import BaseMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -13,9 +16,6 @@ from langchain_core.runnables import (
     RunnablePassthrough,
 )
 from langchain_core.runnables.history import RunnableWithMessageHistory
-
-if not os.environ.get("GOOGLE_API_KEY"):
-    os.environ["GOOGLE_API_KEY"] = getpass.getpass("Enter API key for Google Gemini: ")
 
 # from langchain.chat_models import init_chat_model
 #
@@ -165,7 +165,6 @@ chain_two = (
         | structured_llm
 )
 
-
 title = chain_one.invoke({"article": article})
 print(title)
 
@@ -183,49 +182,6 @@ vector_store = PGVector(
     connection=connection,
     use_jsonb=True,
 )
-
-docs = [
-    Document(
-        page_content="there are cats in the pond",
-        metadata={"id": 1, "location": "pond", "topic": "animals"},
-    ),
-    Document(
-        page_content="ducks are also found in the pond",
-        metadata={"id": 2, "location": "pond", "topic": "animals"},
-    ),
-    Document(
-        page_content="fresh apples are available at the market",
-        metadata={"id": 3, "location": "market", "topic": "food"},
-    ),
-    Document(
-        page_content="the market also sells fresh oranges",
-        metadata={"id": 4, "location": "market", "topic": "food"},
-    ),
-    Document(
-        page_content="the new art exhibit is fascinating",
-        metadata={"id": 5, "location": "museum", "topic": "art"},
-    ),
-    Document(
-        page_content="a sculpture exhibit is also at the museum",
-        metadata={"id": 6, "location": "museum", "topic": "art"},
-    ),
-    Document(
-        page_content="a new coffee shop opened on Main Street",
-        metadata={"id": 7, "location": "Main Street", "topic": "food"},
-    ),
-    Document(
-        page_content="the book club meets at the library",
-        metadata={"id": 8, "location": "library", "topic": "reading"},
-    ),
-    Document(
-        page_content="the library hosts a weekly story time for kids",
-        metadata={"id": 9, "location": "library", "topic": "reading"},
-    ),
-    Document(
-        page_content="a cooking class for beginners is offered at the community center",
-        metadata={"id": 10, "location": "community center", "topic": "classes"},
-    ),
-]
 
 vector_store.add_documents(docs, ids=[doc.metadata["id"] for doc in docs])
 
@@ -270,7 +226,8 @@ def get_by_session_id(session_id: str) -> BaseChatMessageHistory:
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 prompt = ChatPromptTemplate.from_messages([
-    ("system", "You're an assistant who's good at {ability}. You always answer in a concise manner under 200 characters."),
+    ("system",
+     "You're an assistant who's good at {ability}. You always answer in a concise manner under 200 characters."),
     MessagesPlaceholder(variable_name="history"),
     ("human", "{question}"),
 ])
@@ -304,3 +261,14 @@ print(chain_with_history.invoke(  # noqa: T201
 ))
 
 print(store)  # noqa: T201
+
+
+
+
+   # if "agent" in event:
+    #     for msg in event["agent"]["messages"]:
+    #         print("\n[Agent]:", msg.content)
+    #
+    # if "tools" in event:
+    #     for msg in event["tools"]["messages"]:
+    #         print("\n[Tool:", msg.name, "]", msg.content)
