@@ -1,6 +1,8 @@
-from flask import Flask, request
+from flask import Flask, request, Response, stream_with_context
 from query_agent import get_agent_executor
 from flask_cors import CORS
+from langchain_core.messages import AIMessage
+import json
 
 
 def create_app():
@@ -24,9 +26,15 @@ def chat():
         config={"configurable": {"thread_id": thread_id}},
         stream_mode="values"
     )
-    final_event = None
-    for event in events:
-        event["messages"][-1].pretty_print()
-        final_event = event
 
-    return {"message": final_event["messages"][-1].content}
+    @stream_with_context
+    def generate():
+        for event in events:
+            # Debug print to console
+            for message in event["messages"]:
+                if isinstance(message, AIMessage):
+                    print((message.content or (message.additional_kwargs or {}).get("tool_calls", {})[0].get("function", {}).get("name")))
+                    # Yield JSON as string
+                    yield json.dumps({"message": (message.content or (message.additional_kwargs or {}).get("tool_calls", {})[0].get("function", {}).get("name"))}) + "\n"
+
+    return Response(generate(), mimetype="application/json")
