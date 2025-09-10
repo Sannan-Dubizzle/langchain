@@ -2,7 +2,7 @@ import os
 from langchain_openai import ChatOpenAI
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import create_react_agent
-from my_tools import get_tables_info, get_modules, get_relevant_tables, QuerySQLCheckerTool
+from my_tools import get_modules, get_relevant_tables_schema, QuerySQLCheckerTool
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_community.utilities.sql_database import SQLDatabase
 from langchain_community.tools.sql_database.tool import (
@@ -39,8 +39,7 @@ def get_available_tools(db: SQLDatabase, llm: ChatOpenAI) -> []:
     query_checker_tool = QuerySQLCheckerTool(db=db, llm=llm)
     return [
         get_modules,
-        get_relevant_tables,
-        get_tables_info,
+        get_relevant_tables_schema,
         db_tool,
         query_checker_tool
     ]

@@ -30,9 +30,16 @@ def get_tables_info(table_names: Optional[List[str]] = []) -> str:
 
 
 @tool
-def get_relevant_tables(module: Module) -> List[str]:
-    """accepts the module and returns the list of database table names relating to that module"""
-    return get_tables(module)
+def get_relevant_tables_schema(module: Module) -> str:
+    """accepts the module and returns the schema of database table relating to that module"""
+    table_names = get_tables(module)
+    schema = ""
+    for table_name in table_names:
+        schema += db_schema.get(table_name) if db_schema.get(table_name) else "" + "\n"
+        schema += str(
+            get_table_extra_info(table_name)) + "\n\n\n\n" if get_table_extra_info(table_name) else ""
+
+    return schema
 
 
 @tool

@@ -201,6 +201,9 @@ SQLQuery: SQL Query to run
 SQLResult: Result of the SQLQuery
 Answer: Final answer here
 
+Try to beautify your answer and always prefer rows and tables over plain text if possible.
+Always output the sql queries used in the process in final answer too.
+
 """  # noqa: E501
 
 POSTGRES_PROMPT =_postgres_prompt
