@@ -1,5 +1,6 @@
 from flask import Flask, request
 from query_agent import get_agent_executor
+from flask_cors import CORS
 
 
 def create_app():
@@ -11,7 +12,7 @@ def create_app():
 
 
 app = create_app()
-
+CORS(app)
 
 @app.route("/chat")
 def chat():
