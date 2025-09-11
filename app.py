@@ -2,6 +2,7 @@ from flask import Flask, request, Response, stream_with_context
 from query_agent import get_agent_executor
 from flask_cors import CORS
 from langchain_core.messages import AIMessage
+from my_tools import get_tool_placeholder_message
 import json
 
 
@@ -30,11 +31,12 @@ def chat():
     @stream_with_context
     def generate():
         for event in events:
-            # Debug print to console
-            for message in event["messages"]:
-                if isinstance(message, AIMessage):
-                    print((message.content or (message.additional_kwargs or {}).get("tool_calls", {})[0].get("function", {}).get("name")))
-                    # Yield JSON as string
-                    yield json.dumps({"message": (message.content or (message.additional_kwargs or {}).get("tool_calls", {})[0].get("function", {}).get("name"))}) + "\n"
+            message = event["messages"][-1]
+            message.pretty_print()
+            if isinstance(message, AIMessage):
+                # Yield JSON as string
+                yield json.dumps({"message": (message.content or get_tool_placeholder_message(
+                    (message.additional_kwargs or {}).get("tool_calls", {})[0].get("function", {}).get(
+                        "name")))}) + "\n"
 
     return Response(generate(), mimetype="application/json")

@@ -30,27 +30,35 @@ def get_tables_info(table_names: Optional[List[str]] = []) -> str:
 
 
 @tool
-def get_relevant_tables_schema(module: Module) -> str:
-    """accepts the module and returns the schema of database table relating to that module"""
-    table_names = get_tables(module)
+def get_relevant_tables_schema(modules: List[Module]) -> str:
+    """accepts the list of one or more relevant modules and returns the schema of database table relating to those modules."""
     schema = ""
-    for table_name in table_names:
-        schema += db_schema.get(table_name) if db_schema.get(table_name) else "" + "\n"
-        schema += str(
-            get_table_extra_info(table_name)) + "\n\n\n\n" if get_table_extra_info(table_name) else ""
+    for module in modules:
+        table_names = get_tables(module)
+
+        for table_name in table_names:
+            schema += db_schema.get(table_name) if db_schema.get(table_name) else "" + "\n"
+            schema += str(
+                get_table_extra_info(table_name)) + "\n\n\n\n" if get_table_extra_info(table_name) else ""
 
     return schema
 
 
 @tool
 def get_modules() -> List[Module]:
-    """ returns the list of available modules of the application"""
+    """ returns the list of available modules of the application."""
     var = [
         Module(name="orders"),
         Module(name="products"),
-        Module(name="stores&sellers/users")
+        Module(name="stores&sellers/users"),
+        Module(name="seller<->platform finance records")
     ]
     return var
+
+
+def get_tool_placeholder_message(tool_name: str) -> str:
+    message = tool_messages[tool_name]
+    return message or tool_name
 
 
 class BaseSQLDatabaseTool(BaseModel):
@@ -120,3 +128,11 @@ class QuerySQLCheckerTool(BaseSQLDatabaseTool, BaseTool):
             dialect=self.db.dialect,
             callbacks=run_manager.get_child() if run_manager else None,
         )
+
+
+tool_messages = {
+    "get_modules": "Analyzing the domain",
+    "get_relevant_tables_schema": "Fetching schema details",
+    "sql_db_query_checker": "Validating SQL query",
+    "sql_db_query": "Fetching Data"
+}
