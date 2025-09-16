@@ -1,0 +1,31 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Lambda streaming response example
+
+Resources:
+  StreamingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: streaming-function
+      Handler: handler.lambda_handler
+      Runtime: python3.12
+      Architectures:
+        - x86_64
+      Timeout: 30
+      MemorySize: 512
+      Environment:
+        Variables:
+          # Securely resolve from SSM Parameter Store at deploy time
+          DATABASE_URI: !Sub '{{resolve:ssm-secure:/my/app/DATABASE_URI:1}}'
+          JWT_PUBLIC_KEY: !Sub '{{resolve:ssm-secure:/my/app/JWT_PUBLIC_KEY:1}}'
+          OPENAI_API_KEY: !Sub '{{resolve:ssm-secure:/my/app/OPENAI_API_KEY:1}}'
+          LANGSMITH_TRACING: !Sub '{{resolve:ssm:/my/app/LANGSMITH_TRACING:1}}'
+          LANGSMITH_ENDPOINT: !Sub '{{resolve:ssm:/my/app/LANGSMITH_ENDPOINT:1}}'
+          LANGSMITH_API_KEY: !Sub '{{resolve:ssm-secure:/my/app/LANGSMITH_API_KEY:1}}'
+          LANGSMITH_PROJECT: !Sub '{{resolve:ssm:/my/app/LANGSMITH_PROJECT:1}}'
+      Events:
+        ApiEvent:
+          Type: HttpApi   # must be HttpApi, not RestApi
+          Properties:
+            Path: /stream
+            Method: GET
